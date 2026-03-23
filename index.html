@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CALCULADORA DIFAL</title>
+    <title>Calculadora Difal</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700;800&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
@@ -28,7 +28,8 @@
 
 <div id="app" v-cloak class="max-w-6xl mx-auto px-4 py-8">
     
-    <header class="text-center mb-6 no-print">
+    <header class="text-center mb-6 no-print flex flex-col items-center justify-center">
+        <img src="logo.png" alt="Portal Tributário" class="h-16 mb-2" onerror="this.style.display='none'"> 
         <h1 class="text-3xl font-black text-blue-900 tracking-tighter italic uppercase underline decoration-red-600">CALCULADORA DIFAL <span class="text-red-600 font-black">TATICO</span></h1>
     </header>
 
@@ -95,7 +96,7 @@
                         <span>R$ {{ formatar(calcAtivo.baseFinal) }}</span>
                     </div>
                 </div>
-                <p class="text-[10px] font-black uppercase tracking-widest mb-2 text-red-400">Difal a Recolher</p>
+                <p class="text-[10px] font-black uppercase tracking-widest mb-2 text-red-400">Imposto a Recolher</p>
                 <div class="flex items-center justify-center gap-2">
                     <span class="text-2xl font-bold text-red-500">R$</span>
                     <span class="text-6xl font-black tracking-tighter">{{ formatar(calcAtivo.imposto) }}</span>
@@ -136,8 +137,7 @@
                         <td class="p-3 font-bold">{{ c.empresa }}</td>
                         <td class="p-3 font-mono text-xs">{{ c.nf }}</td>
                         <td class="p-3">R$ {{ c.base }}</td>
-                        <td class="p-3 font-bold text-red-600">R$ {{ c.valor }}</td>
-                        <td class="p-3">{{ c.origem }}%</td>
+                        <td class="p-3 font-black text-red-600">R$ {{ c.valor }}</td> <td class="p-3">{{ c.origem }}%</td>
                         <td class="p-3">{{ c.destino }}%</td>
                     </tr>
                 </tbody>
@@ -15196,6 +15196,7 @@
 			{"NCM":"99997103","DESC":"JOALHERIA DE OURO DO CAPITULO 71 DA NCM","ALQ":20,"RBC":1.0},
 			{"NCM":"99997104","DESC":"OUTROS ARTIGOS DO CAPITULO 71 DA NCM","ALQ":20,"RBC":1.0},
 			{"NCM":"99999900","DESC":"QQOUTRA MERCADORIA SEM COBERTURA CAMBIAL","ALQ":20,"RBC":1.0}]; 
+
     const { createApp, ref, computed, onMounted } = Vue;
     createApp({
         setup() {
@@ -15209,13 +15210,12 @@
             });
 
             onMounted(() => {
-                const salvo = localStorage.getItem('rel_v_finalissima');
+                const salvo = localStorage.getItem('rel_v_final_direta');
                 if (salvo) relatorio.value = JSON.parse(salvo);
             });
 
             const formatar = (v) => v.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
-            // LÓGICA DE PESQUISA REINSERIDA
             const filteredResults = computed(() => {
                 const q = searchQuery.value.toLowerCase().trim();
                 if (q.length < 2) return [];
@@ -15237,14 +15237,13 @@
                 let alqDest = 0;
 
                 if (tab.value === 'difal') {
-                    // REGRA DF: BASE REDUZIDA
+                    // REGRA DF: MULTIPLICAÇÃO DIRETA PELO FATOR RBC
                     const rbc = ncmEncontrado.value ? Number(ncmEncontrado.value.RBC) : 1;
-                    const fatorReducao = (rbc > 0 && rbc < 1) ? Math.abs(1 - rbc) : 1;
-                    baseFinal = baseBruta * fatorReducao;
+                    baseFinal = baseBruta * rbc; // <-- AQUI ESTÁ A CORREÇÃO!
                     alqDest = alqEfetivaDF.value;
                     imposto = baseFinal * ((alqDest / 100) - (f.origem / 100));
                 } else {
-                    // REGRA GO: BASE DUPLA COM MULTIPLICAÇÃO DIRETA
+                    // REGRA GO: BASE DUPLA
                     alqDest = f.interna;
                     baseFinal = baseBruta > 0 ? (baseBruta / (1 - (alqDest / 100))) : 0;
                     imposto = baseFinal * ((alqDest / 100) - (f.origem / 100));
@@ -15264,7 +15263,7 @@
                     origem: f.origem,
                     destino: res.alqDestino
                 });
-                localStorage.setItem('rel_v_finalissima', JSON.stringify(relatorio.value));
+                localStorage.setItem('rel_v_final_direta', JSON.stringify(relatorio.value));
             };
 
             const copiarExcel = () => {
@@ -15274,7 +15273,7 @@
                 alert("Copiado com sucesso!");
             };
 
-            const limparRelatorio = () => { if(confirm("Apagar tudo?")) { relatorio.value = []; localStorage.removeItem('rel_v_finalissima'); } };
+            const limparRelatorio = () => { if(confirm("Apagar tudo?")) { relatorio.value = []; localStorage.removeItem('rel_v_final_direta'); } };
             const imprimir = () => window.print();
 
             return { tab, searchQuery, filteredResults, form, ncmEncontrado, alqEfetivaDF, calcAtivo, adicionarAoRelatorio, formatar, relatorio, copiarExcel, limparRelatorio, imprimir };
