@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora Difal</title>
+    <title>CALCULADORA DIFAL</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700;800&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
@@ -16,6 +16,11 @@
         .tab-btn.active { color: #003366; border-bottom: 4px solid #cc0000; background: #f8fafc; }
         .result-panel { background: #003366; border-radius: 24px; color: white; min-height: 420px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); }
         
+        /* === ANIMAÇÕES DE TRANSIÇÃO (O SEGREDO DA SUAVIDADE) === */
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease, transform 0.3s ease; }
+        .fade-enter-from { opacity: 0; transform: translateY(15px); }
+        .fade-leave-to { opacity: 0; transform: translateY(-15px); }
+
         @media print {
             nav, header, .no-print, button, input, select, .lg-col-span-7 { display: none !important; }
             .max-w-6xl { max-width: 100% !important; width: 100% !important; margin: 0 !important; }
@@ -34,115 +39,130 @@
     </header>
 
     <nav class="flex bg-white shadow-sm rounded-2xl mb-8 overflow-hidden border border-gray-200 no-print">
-        <button @click="tab = 'consulta'" :class="['tab-btn', tab === 'consulta' ? 'active' : '']">🔍 Consulta NCM</button>
-        <button @click="tab = 'difal'" :class="['tab-btn', tab === 'difal' ? 'active' : '']">📊 DIFAL DF</button>
-        <button @click="tab = 'goias'" :class="['tab-btn', tab === 'goias' ? 'active' : '']">🏛️ DIFAL GO</button>
+        <button @click="mudarAba('consulta')" :class="['tab-btn', tab === 'consulta' ? 'active' : '']">🔍 Consulta NCM</button>
+        <button @click="mudarAba('difal')" :class="['tab-btn', tab === 'difal' ? 'active' : '']">📊 DIFAL DF</button>
+        <button @click="mudarAba('goias')" :class="['tab-btn', tab === 'goias' ? 'active' : '']">🏛️ DIFAL GO</button>
     </nav>
 
-    <main class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        <div v-if="tab !== 'consulta'" class="lg:col-span-7 bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 no-print">
-            <div class="flex items-center gap-3 mb-8">
-                <div :class="['w-10 h-10 rounded-xl flex items-center justify-center text-white font-black', tab === 'difal' ? 'bg-blue-900' : 'bg-red-600']">{{ tab === 'difal' ? 'DF' : 'GO' }}</div>
-                <h2 class="text-xl font-black text-blue-900 uppercase">Dados de Entrada</h2>
-            </div>
-
-            <div class="space-y-4">
-                <div class="grid grid-cols-2 gap-4">
-                    <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Empresa</label><input type="text" v-model="form[tab].empresa" class="input-field"></div>
-                    <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-1">NF</label><input type="text" v-model="form[tab].nf" class="input-field"></div>
-                </div>
-
-                <div v-if="tab === 'difal'">
-                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">NCM</label>
-                    <input type="text" v-model="form.difal.ncm" placeholder="8 dígitos..." class="input-field border-red-600">
-                    <div v-if="ncmEncontrado" class="mt-2 p-3 bg-blue-50 rounded-xl text-xs text-blue-900 font-bold border border-blue-100">{{ ncmEncontrado.DESC }}</div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Valor Mercadoria</label><input type="number" v-model="form[tab].valor" class="input-field font-mono-robust"></div>
-                    <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Frete</label><input type="number" v-model="form[tab].frete" class="input-field font-mono-robust"></div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Outras Desp.</label><input type="number" v-model="form[tab].outras" class="input-field font-mono-robust"></div>
-                    <div><label class="block text-[10px] font-black text-red-500 uppercase mb-1">Desconto (-)</label><input type="number" v-model="form[tab].desconto" class="input-field font-mono-robust text-red-600"></div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Origem %</label>
-                        <select v-model="form[tab].origem" class="input-field">
-                            <option :value="7">7% (SUL/SE)</option><option :value="12">12% (N/NE/CO)</option><option :value="4">4% (IMPORTADO)</option>
-                        </select>
+    <main class="space-y-8">
+        <transition name="fade" mode="out-in">
+            
+            <div v-if="tab !== 'consulta'" class="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
+                <div class="lg:col-span-7 bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 no-print">
+                    <div class="flex items-center gap-3 mb-8">
+                        <div :class="['w-10 h-10 rounded-xl flex items-center justify-center text-white font-black', tab === 'difal' ? 'bg-blue-900' : 'bg-red-600']">{{ tab === 'difal' ? 'DF' : 'GO' }}</div>
+                        <h2 class="text-xl font-black text-blue-900 uppercase">Dados da Nota Fiscal</h2>
                     </div>
-                    <div><label class="block text-[10px] font-black text-blue-600 uppercase mb-1">Interna Destino %</label>
-                        <input type="number" v-model="form.goias.interna" v-if="tab === 'goias'" class="input-field border-blue-600 bg-blue-50">
-                        <input type="text" readonly :value="alqEfetivaDF + '%'" v-else class="input-field bg-gray-50 text-gray-400">
-                    </div>
-                </div>
 
-                <button @click="adicionarAoRelatorio" class="w-full mt-4 py-4 rounded-xl bg-red-600 text-white font-black uppercase tracking-widest text-sm shadow-lg hover:bg-red-700 transition">📥 Salvar no Relatório</button>
-            </div>
-        </div>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Empresa</label><input type="text" v-model="form[tab].empresa" class="input-field"></div>
+                            <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-1">NF</label><input type="text" v-model="form[tab].nf" class="input-field"></div>
+                        </div>
 
-        <div v-if="tab !== 'consulta'" class="lg:col-span-5 no-print">
-            <div :class="['result-panel p-10 h-full flex flex-col justify-center text-center relative overflow-hidden', tab === 'goias' ? '!bg-slate-800' : '']">
-                <p class="text-blue-300 font-bold text-xs uppercase tracking-[0.3em] mb-8">Resumo do Cálculo</p>
-                <div class="space-y-4 mb-10 text-left font-mono-robust bg-black/20 p-6 rounded-2xl border border-white/5 text-sm">
-                    <div class="flex justify-between border-b border-white/5 pb-2 text-xs opacity-70"><span>Base Bruta (Nota):</span> <span>R$ {{ formatar(calcAtivo.baseBruta) }}</span></div>
-                    
-                    <div class="flex justify-between text-yellow-400 font-black">
-                        <span>{{ tab === 'difal' ? 'Base Reduzida (DF):' : 'Base Recomposta (GO):' }}</span> 
-                        <span>R$ {{ formatar(calcAtivo.baseFinal) }}</span>
+                        <div v-if="tab === 'difal'">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">NCM</label>
+                            <input type="text" v-model="form.difal.ncm" placeholder="8 dígitos..." class="input-field border-red-600">
+                            <div v-if="ncmEncontrado" class="mt-2 p-3 bg-blue-50 rounded-xl text-xs text-blue-900 font-bold border border-blue-100">{{ ncmEncontrado.DESC }}</div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Valor Mercadoria</label><input type="number" v-model="form[tab].valor" class="input-field font-mono-robust"></div>
+                            <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Frete</label><input type="number" v-model="form[tab].frete" class="input-field font-mono-robust"></div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Outras Desp.</label><input type="number" v-model="form[tab].outras" class="input-field font-mono-robust"></div>
+                            <div><label class="block text-[10px] font-black text-red-500 uppercase mb-1">Desconto (-)</label><input type="number" v-model="form[tab].desconto" class="input-field font-mono-robust text-red-600"></div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Origem %</label>
+                                <select v-model="form[tab].origem" class="input-field">
+                                    <option :value="7">7% (SUL/SE)</option><option :value="12">12% (N/NE/CO)</option><option :value="4">4% (IMPORTADO)</option>
+                                </select>
+                            </div>
+                            <div><label class="block text-[10px] font-black text-blue-600 uppercase mb-1">Interna Destino %</label>
+                                <input type="number" v-model="form.goias.interna" v-if="tab === 'goias'" class="input-field border-blue-600 bg-blue-50">
+                                <input type="text" readonly :value="alqEfetivaDF + '%'" v-else class="input-field bg-gray-50 text-gray-400">
+                            </div>
+                        </div>
+
+                        <button @click="adicionarAoRelatorio" class="w-full mt-4 py-4 rounded-xl bg-red-600 text-white font-black uppercase tracking-widest text-sm shadow-lg hover:bg-red-700 transition transform hover:-translate-y-1">📥 Salvar no Relatório</button>
                     </div>
                 </div>
-                <p class="text-[10px] font-black uppercase tracking-widest mb-2 text-red-400">Imposto a Recolher</p>
-                <div class="flex items-center justify-center gap-2">
-                    <span class="text-2xl font-bold text-red-500">R$</span>
-                    <span class="text-6xl font-black tracking-tighter">{{ formatar(calcAtivo.imposto) }}</span>
-                </div>
-            </div>
-        </div>
 
-        <div v-if="tab === 'consulta'" class="lg:col-span-12 no-print">
-            <input type="text" v-model="searchQuery" placeholder="Pesquise NCM ou Produto..." class="w-full p-6 rounded-2xl shadow-xl border-2 border-blue-900 text-xl mb-8 outline-none focus:border-red-600 transition">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div v-for="item in filteredResults" :key="item.NCM" class="bg-white p-5 rounded-2xl border-l-8 border-red-600 shadow-sm transition hover:shadow-md">
-                    <p class="text-xs font-black text-blue-900">NCM {{ item.NCM }}</p>
-                    <h3 class="text-[11px] text-gray-500 font-bold my-2 uppercase line-clamp-2 h-8">{{ item.DESC }}</h3>
-                    <div class="flex justify-between border-t pt-3 mt-3">
-                        <p class="text-xs font-bold text-gray-400">INT: {{ item.ALQ }}%</p>
-                        <p class="text-xs font-bold text-red-600">RBC: {{ item.RBC }}</p>
+                <div class="lg:col-span-5 no-print">
+                    <div :class="['result-panel p-10 h-full flex flex-col justify-center text-center relative overflow-hidden', tab === 'goias' ? '!bg-slate-800' : '']">
+                        <p class="text-blue-300 font-bold text-xs uppercase tracking-[0.3em] mb-8">Resumo do Cálculo</p>
+                        <div class="space-y-4 mb-10 text-left font-mono-robust bg-black/20 p-6 rounded-2xl border border-white/5 text-sm">
+                            <div class="flex justify-between border-b border-white/5 pb-2 text-xs opacity-70"><span>Valor da mercadoria:</span> <span>R$ {{ formatar(calcAtivo.baseBruta) }}</span></div>
+                            
+                            <div class="flex justify-between text-yellow-400 font-black">
+                                <span>{{ tab === 'difal' ? 'Base de Cálculo:' : 'Base de Cálculo:' }}</span> 
+                                <span>R$ {{ formatar(calcAtivo.baseFinal) }}</span>
+                            </div>
+                        </div>
+                        <p class="text-[10px] font-black uppercase tracking-widest mb-2 text-red-400">Difal a Recolher</p>
+                        <div class="flex items-center justify-center gap-2">
+                            <span class="text-2xl font-bold text-red-500">R$</span>
+                            <span class="text-6xl font-black tracking-tighter">{{ formatar(calcAtivo.imposto) }}</span>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div v-if="searchQuery.length >= 2 && filteredResults.length === 0" class="text-center py-20 text-gray-400">Nenhum resultado encontrado.</div>
-        </div>
 
-        <div v-if="relatorio.length > 0" class="lg:col-span-12 bg-white p-8 rounded-3xl shadow-sm border mt-8 print:border-none print:p-0">
-            <div class="flex justify-between items-center mb-6 no-print">
-                <h2 class="text-xl font-black text-blue-900 uppercase">📋 Relatório Consolidado</h2>
-                <div class="flex gap-2">
-                    <button @click="imprimir" class="bg-blue-100 text-blue-900 px-3 py-2 rounded-lg font-bold text-xs hover:bg-blue-200">IMPRIMIR</button>
-                    <button @click="copiarExcel" class="bg-green-100 text-green-700 px-3 py-2 rounded-lg font-bold text-xs hover:bg-green-200">EXCEL</button>
-                    <button @click="limparRelatorio" class="bg-red-50 text-red-600 px-3 py-2 rounded-lg font-bold text-xs hover:bg-red-100">LIMPAR</button>
+            <div v-else class="w-full no-print">
+                <input type="text" v-model="searchQuery" placeholder="Pesquise NCM ou Produto..." class="w-full p-6 rounded-2xl shadow-xl border-2 border-blue-900 text-xl mb-8 outline-none focus:border-red-600 transition">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div v-for="item in filteredResults" :key="item.NCM" 
+                         @click="selecionarNcmParaDF(item.NCM)"
+                         class="bg-white p-5 rounded-2xl border-l-8 border-red-600 shadow-sm transition hover:shadow-lg cursor-pointer hover:bg-red-50 transform hover:-translate-y-1">
+                        <p class="text-xs font-black text-blue-900">NCM {{ item.NCM }}</p>
+                        <h3 class="text-[11px] text-gray-500 font-bold my-2 uppercase line-clamp-2 h-8">{{ item.DESC }}</h3>
+                        <div class="flex justify-between border-t pt-3 mt-3">
+                            <p class="text-xs font-bold text-gray-400">INT: {{ item.ALQ }}%</p>
+                            <p class="text-xs font-bold text-red-600">RBC: {{ item.RBC }}</p>
+                        </div>
+                        <div class="mt-3 text-center text-[9px] font-black text-red-600 uppercase opacity-70 tracking-widest">
+                            👉 Clique p/ calcular DF
+                        </div>
+                    </div>
                 </div>
+                
+                <div v-if="searchQuery.length >= 2 && filteredResults.length === 0" class="text-center py-20 text-gray-400">Nenhum resultado encontrado.</div>
             </div>
-            <table class="w-full text-left text-sm">
-                <thead class="bg-gray-50">
-                    <tr><th class="p-3">Empresa</th><th class="p-3">NF</th><th class="p-3">Base Cálculo</th><th class="p-3 text-red-600">Valor DIFAL</th><th class="p-3">Origem</th><th class="p-3">Destino</th></tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    <tr v-for="(c, i) in relatorio" :key="i">
-                        <td class="p-3 font-bold">{{ c.empresa }}</td>
-                        <td class="p-3 font-mono text-xs">{{ c.nf }}</td>
-                        <td class="p-3">R$ {{ c.base }}</td>
-                        <td class="p-3 font-black text-red-600">R$ {{ c.valor }}</td> <td class="p-3">{{ c.origem }}%</td>
-                        <td class="p-3">{{ c.destino }}%</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+
+        </transition>
+
+        <transition name="fade">
+            <div v-if="relatorio.length > 0" class="bg-white p-8 rounded-3xl shadow-sm border mt-8 print:border-none print:p-0">
+                <div class="flex justify-between items-center mb-6 no-print">
+                    <h2 class="text-xl font-black text-blue-900 uppercase">📋 Relatório Consolidado</h2>
+                    <div class="flex gap-2">
+                        <button @click="imprimir" class="bg-blue-100 text-blue-900 px-3 py-2 rounded-lg font-bold text-xs hover:bg-blue-200 transition">IMPRIMIR</button>
+                        <button @click="copiarExcel" class="bg-green-100 text-green-700 px-3 py-2 rounded-lg font-bold text-xs hover:bg-green-200 transition">EXCEL</button>
+                        <button @click="limparRelatorio" class="bg-red-50 text-red-600 px-3 py-2 rounded-lg font-bold text-xs hover:bg-red-100 transition">LIMPAR</button>
+                    </div>
+                </div>
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-gray-50">
+                        <tr><th class="p-3">Empresa</th><th class="p-3">NF</th><th class="p-3">Base Cálculo</th><th class="p-3 text-red-600">Valor DIFAL</th><th class="p-3">Origem</th><th class="p-3">Destino</th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <tr v-for="(c, i) in relatorio" :key="i">
+                            <td class="p-3 font-bold">{{ c.empresa }}</td>
+                            <td class="p-3 font-mono text-xs">{{ c.nf }}</td>
+                            <td class="p-3">R$ {{ c.base }}</td>
+                            <td class="p-3 font-black text-red-600">R$ {{ c.valor }}</td>
+                            <td class="p-3">{{ c.origem }}%</td>
+                            <td class="p-3">{{ c.destino }}%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </transition>
     </main>
 </div>
 
@@ -15196,7 +15216,6 @@
 			{"NCM":"99997103","DESC":"JOALHERIA DE OURO DO CAPITULO 71 DA NCM","ALQ":20,"RBC":1.0},
 			{"NCM":"99997104","DESC":"OUTROS ARTIGOS DO CAPITULO 71 DA NCM","ALQ":20,"RBC":1.0},
 			{"NCM":"99999900","DESC":"QQOUTRA MERCADORIA SEM COBERTURA CAMBIAL","ALQ":20,"RBC":1.0}]; 
-
     const { createApp, ref, computed, onMounted } = Vue;
     createApp({
         setup() {
@@ -15210,7 +15229,7 @@
             });
 
             onMounted(() => {
-                const salvo = localStorage.getItem('rel_v_final_direta');
+                const salvo = localStorage.getItem('rel_v_final_suave');
                 if (salvo) relatorio.value = JSON.parse(salvo);
             });
 
@@ -15229,6 +15248,19 @@
 
             const alqEfetivaDF = computed(() => ncmEncontrado.value ? ncmEncontrado.value.ALQ : 20);
 
+            // FUNÇÃO PARA MUDAR DE ABA COM ROLAGEM
+            const mudarAba = (novaAba) => {
+                tab.value = novaAba;
+            };
+
+            // FUNÇÃO: Seleciona o NCM e pula para a aba do DF com rolagem
+            const selecionarNcmParaDF = (ncmCode) => {
+                form.value.difal.ncm = String(ncmCode);
+                tab.value = 'difal';
+                searchQuery.value = ''; // Limpa a pesquisa
+                window.scrollTo({ top: 0, behavior: 'smooth' }); // Sobe a tela com elegância
+            };
+
             const calcAtivo = computed(() => {
                 const f = form.value[tab.value];
                 const baseBruta = (Number(f.valor) + Number(f.frete) + Number(f.outras)) - Number(f.desconto);
@@ -15237,13 +15269,13 @@
                 let alqDest = 0;
 
                 if (tab.value === 'difal') {
-                    // REGRA DF: MULTIPLICAÇÃO DIRETA PELO FATOR RBC
+                    // REGRA DF
                     const rbc = ncmEncontrado.value ? Number(ncmEncontrado.value.RBC) : 1;
-                    baseFinal = baseBruta * rbc; // <-- AQUI ESTÁ A CORREÇÃO!
+                    baseFinal = baseBruta * rbc; 
                     alqDest = alqEfetivaDF.value;
                     imposto = baseFinal * ((alqDest / 100) - (f.origem / 100));
                 } else {
-                    // REGRA GO: BASE DUPLA
+                    // REGRA GO
                     alqDest = f.interna;
                     baseFinal = baseBruta > 0 ? (baseBruta / (1 - (alqDest / 100))) : 0;
                     imposto = baseFinal * ((alqDest / 100) - (f.origem / 100));
@@ -15263,7 +15295,7 @@
                     origem: f.origem,
                     destino: res.alqDestino
                 });
-                localStorage.setItem('rel_v_final_direta', JSON.stringify(relatorio.value));
+                localStorage.setItem('rel_v_final_suave', JSON.stringify(relatorio.value));
             };
 
             const copiarExcel = () => {
@@ -15273,10 +15305,10 @@
                 alert("Copiado com sucesso!");
             };
 
-            const limparRelatorio = () => { if(confirm("Apagar tudo?")) { relatorio.value = []; localStorage.removeItem('rel_v_final_direta'); } };
+            const limparRelatorio = () => { if(confirm("Apagar tudo?")) { relatorio.value = []; localStorage.removeItem('rel_v_final_suave'); } };
             const imprimir = () => window.print();
 
-            return { tab, searchQuery, filteredResults, form, ncmEncontrado, alqEfetivaDF, calcAtivo, adicionarAoRelatorio, formatar, relatorio, copiarExcel, limparRelatorio, imprimir };
+            return { tab, searchQuery, filteredResults, form, ncmEncontrado, alqEfetivaDF, calcAtivo, mudarAba, selecionarNcmParaDF, adicionarAoRelatorio, formatar, relatorio, copiarExcel, limparRelatorio, imprimir };
         }
     }).mount('#app');
 </script>
