@@ -12,17 +12,15 @@
         .font-mono-robust { font-family: 'JetBrains Mono', monospace; }
         [v-cloak] { display: none; }
         .input-field { height: 48px; border: 2px solid #003366; border-radius: 10px; padding: 0 12px; font-weight: 700; width: 100%; background: white; }
-        .tab-btn { flex: 1; padding: 18px; font-size: 11px; font-weight: 900; text-transform: uppercase; color: #64748b; border-bottom: 3px solid transparent; transition: all 0.2s; }
+        .tab-btn { flex: 1; padding: 18px; font-size: 11px; font-weight: 900; text-transform: uppercase; color: #64748b; border-bottom: 3px solid transparent; transition: all 0.2s; cursor: pointer; }
         .tab-btn.active { color: #003366; border-bottom: 4px solid #cc0000; background: #f8fafc; }
         .result-panel { background: #003366; border-radius: 24px; color: white; min-height: 420px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); }
-        
-        /* === ANIMAÇÕES DE TRANSIÇÃO (O SEGREDO DA SUAVIDADE) === */
         .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease, transform 0.3s ease; }
         .fade-enter-from { opacity: 0; transform: translateY(15px); }
         .fade-leave-to { opacity: 0; transform: translateY(-15px); }
 
         @media print {
-            nav, header, .no-print, button, input, select, .lg-col-span-7 { display: none !important; }
+            nav, header, .no-print, button, input, select, .lg-col-span-7, .xml-panel { display: none !important; }
             .max-w-6xl { max-width: 100% !important; width: 100% !important; margin: 0 !important; }
             table { width: 100% !important; border-collapse: collapse !important; font-size: 9pt !important; }
             th, td { border: 1px solid #ddd !important; padding: 6px !important; }
@@ -38,16 +36,34 @@
         <h1 class="text-3xl font-black text-blue-900 tracking-tighter italic uppercase underline decoration-red-600">CALCULADORA DIFAL <span class="text-red-600 font-black">TATICO</span></h1>
     </header>
 
-    <nav class="flex bg-white shadow-sm rounded-2xl mb-8 overflow-hidden border border-gray-200 no-print">
+    <nav class="flex bg-white shadow-sm rounded-2xl mb-8 overflow-hidden border border-gray-200 no-print flex-wrap">
         <button @click="mudarAba('consulta')" :class="['tab-btn', tab === 'consulta' ? 'active' : '']">🔍 Consulta NCM</button>
         <button @click="mudarAba('difal')" :class="['tab-btn', tab === 'difal' ? 'active' : '']">📊 DIFAL DF</button>
         <button @click="mudarAba('goias')" :class="['tab-btn', tab === 'goias' ? 'active' : '']">🏛️ DIFAL GO</button>
+        <button @click="mudarAba('xml')" :class="['tab-btn', tab === 'xml' ? 'active text-green-700 !border-green-600' : 'bg-green-50 text-green-700']">📂 Importar XML</button>
     </nav>
 
     <main class="space-y-8">
         <transition name="fade" mode="out-in">
             
-            <div v-if="tab !== 'consulta'" class="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
+            <div v-if="tab === 'xml'" class="xml-panel bg-white p-10 rounded-[32px] shadow-sm border border-gray-100 no-print w-full">
+                <div class="flex items-center gap-3 mb-8">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-black bg-green-600">XML</div>
+                    <div>
+                        <h2 class="text-xl font-black text-blue-900 uppercase">cálculo em lote</h2>
+                        <p class="text-xs text-gray-400 font-bold mt-1">Identifica regras, NCM e faz o cálculo do difal a recolher em lote.</p>
+                    </div>
+                </div>
+
+                <div class="border-2 border-dashed border-green-300 bg-green-50 p-16 rounded-3xl text-center relative hover:bg-green-100 transition cursor-pointer group">
+                    <input type="file" multiple accept=".xml" @change="processarXMLs" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                    <p class="text-6xl mb-6 transition transform group-hover:scale-110">📂</p>
+                    <h3 class="text-2xl font-black text-green-800 uppercase mb-3">Clique ou Arraste os XMLs aqui</h3>
+                    <p class="text-sm font-bold text-green-600">O sistema fará a triagem e o cálculo de todas as notas instantaneamente.</p>
+                </div>
+            </div>
+
+            <div v-else-if="tab === 'difal' || tab === 'goias'" class="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
                 <div class="lg:col-span-7 bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 no-print">
                     <div class="flex items-center gap-3 mb-8">
                         <div :class="['w-10 h-10 rounded-xl flex items-center justify-center text-white font-black', tab === 'difal' ? 'bg-blue-900' : 'bg-red-600']">{{ tab === 'difal' ? 'DF' : 'GO' }}</div>
@@ -83,8 +99,7 @@
                                 </select>
                             </div>
                             <div><label class="block text-[10px] font-black text-blue-600 uppercase mb-1">Interna Destino %</label>
-                                <input type="number" v-model="form.goias.interna" v-if="tab === 'goias'" class="input-field border-blue-600 bg-blue-50">
-                                <input type="text" readonly :value="alqEfetivaDF + '%'" v-else class="input-field bg-gray-50 text-gray-400">
+                                <input type="text" readonly :value="tab === 'goias' ? ALIQUOTA_INTERNA_GO + '%' : alqEfetivaDF + '%'" class="input-field bg-gray-50 text-gray-400">
                             </div>
                         </div>
 
@@ -103,16 +118,16 @@
                                 <span>R$ {{ formatar(calcAtivo.baseFinal) }}</span>
                             </div>
                         </div>
-                        <p class="text-[10px] font-black uppercase tracking-widest mb-2 text-red-400">Difal a Recolher</p>
+                        <p class="text-[10px] font-black uppercase tracking-widest mb-2 text-red-500">Difal a Recolher</p>
                         <div class="flex items-center justify-center gap-2">
-                            <span class="text-2xl font-bold text-red-500">R$</span>
+                            <span class="text-2xl font-black text-red-500">R$</span>
                             <span class="text-6xl font-black tracking-tighter">{{ formatar(calcAtivo.imposto) }}</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div v-else class="w-full no-print">
+            <div v-else-if="tab === 'consulta'" class="w-full no-print">
                 <input type="text" v-model="searchQuery" placeholder="Pesquise NCM ou Produto..." class="w-full p-6 rounded-2xl shadow-xl border-2 border-blue-900 text-xl mb-8 outline-none focus:border-red-600 transition">
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -125,15 +140,12 @@
                             <p class="text-xs font-bold text-gray-400">INT: {{ item.ALQ }}%</p>
                             <p class="text-xs font-bold text-red-600">RBC: {{ item.RBC }}</p>
                         </div>
-                        <div class="mt-3 text-center text-[9px] font-black text-red-600 uppercase opacity-70 tracking-widest">
-                            👉 Clique p/ calcular DF
-                        </div>
+                        <div class="mt-3 text-center text-[9px] font-black text-red-600 uppercase opacity-70 tracking-widest">👉 Clique p/ calcular DF</div>
                     </div>
                 </div>
                 
                 <div v-if="searchQuery.length >= 2 && filteredResults.length === 0" class="text-center py-20 text-gray-400">Nenhum resultado encontrado.</div>
             </div>
-
         </transition>
 
         <transition name="fade">
@@ -146,21 +158,45 @@
                         <button @click="limparRelatorio" class="bg-red-50 text-red-600 px-3 py-2 rounded-lg font-bold text-xs hover:bg-red-100 transition">LIMPAR</button>
                     </div>
                 </div>
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-gray-50">
-                        <tr><th class="p-3">Empresa</th><th class="p-3">NF</th><th class="p-3">Base Cálculo</th><th class="p-3 text-red-600">Valor DIFAL</th><th class="p-3">Origem</th><th class="p-3">Destino</th></tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        <tr v-for="(c, i) in relatorio" :key="i">
-                            <td class="p-3 font-bold">{{ c.empresa }}</td>
-                            <td class="p-3 font-mono text-xs">{{ c.nf }}</td>
-                            <td class="p-3">R$ {{ c.base }}</td>
-                            <td class="p-3 font-black text-red-600">R$ {{ c.valor }}</td>
-                            <td class="p-3">{{ c.origem }}%</td>
-                            <td class="p-3">{{ c.destino }}%</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm min-w-[900px]">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="p-3">Empresa</th>
+                                <th class="p-3">NF</th>
+                                <th class="p-3">NCM</th>
+                                <th class="p-3">Valor NF</th>
+                                <th class="p-3">Base Cálculo</th>
+                                <th class="p-3 text-red-600">Valor DIFAL</th>
+                                <th class="p-3 text-blue-900">Trajeto UF</th>
+                                <th class="p-3">Origem</th>
+                                <th class="p-3">Destino</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr v-for="(c, i) in relatorio" :key="i" class="hover:bg-gray-50">
+                                <td class="p-3 font-bold truncate max-w-[150px]">{{ c.empresa }}</td>
+                                <td class="p-3 font-mono text-xs">{{ c.nf }}</td>
+                                <td class="p-3 font-mono text-xs text-gray-500">{{ c.ncm }}</td>
+                                <td class="p-3">R$ {{ c.valorBruto }}</td>
+                                <td class="p-3">R$ {{ c.base }}</td>
+                                <td class="p-3 font-bold text-red-600">R$ {{ c.valor }}</td>
+                                <td class="p-3 font-bold text-blue-900 bg-blue-50/50 rounded-lg text-center">{{ c.ufOrigem }} ➔ {{ c.ufDestino }}</td>
+                                <td class="p-3 font-mono text-xs">{{ c.origem }}%</td>
+                                <td class="p-3 font-mono text-xs">{{ c.destino }}%</td>
+                            </tr>
+                        </tbody>
+                        <tfoot class="bg-gray-100 border-t-4 border-gray-300">
+                            <tr>
+                                <td colspan="3" class="p-4 text-right font-black uppercase tracking-widest text-blue-900 text-xs">Total Geral:</td>
+                                <td class="p-4 font-black text-blue-900">R$ {{ totaisRelatorio.valorBruto }}</td>
+                                <td class="p-4 font-black text-blue-900">R$ {{ totaisRelatorio.base }}</td>
+                                <td class="p-4 font-black text-red-600">R$ {{ totaisRelatorio.valor }}</td>
+                                <td colspan="3" class="p-4"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
             </div>
         </transition>
     </main>
@@ -15215,25 +15251,53 @@
 			{"NCM":"99980202","DESC":"CONSUMO DE BORDO - QQOUTRA MERCADORIA P/AERONAVES","ALQ":20,"RBC":1.0},
 			{"NCM":"99997103","DESC":"JOALHERIA DE OURO DO CAPITULO 71 DA NCM","ALQ":20,"RBC":1.0},
 			{"NCM":"99997104","DESC":"OUTROS ARTIGOS DO CAPITULO 71 DA NCM","ALQ":20,"RBC":1.0},
-			{"NCM":"99999900","DESC":"QQOUTRA MERCADORIA SEM COBERTURA CAMBIAL","ALQ":20,"RBC":1.0}]; 
+			{"NCM":"99999900","DESC":"QQOUTRA MERCADORIA SEM COBERTURA CAMBIAL","ALQ":20,"RBC":1.0}];     
+    // ALÍQUOTA FIXA DE GOIÁS
+    const ALIQUOTA_INTERNA_GO = 19;
+
     const { createApp, ref, computed, onMounted } = Vue;
     createApp({
         setup() {
-            const tab = ref('difal');
+            const tab = ref('xml'); 
             const relatorio = ref([]);
             const searchQuery = ref('');
             
             const form = ref({
                 difal: { empresa: '', nf: '', ncm: '', valor: 0, frete: 0, outras: 0, desconto: 0, origem: 12 },
-                goias: { empresa: '', nf: '', interna: 19, valor: 0, frete: 0, outras: 0, desconto: 0, origem: 12 }
+                goias: { empresa: '', nf: '', interna: ALIQUOTA_INTERNA_GO, valor: 0, frete: 0, outras: 0, desconto: 0, origem: 12 }
             });
 
             onMounted(() => {
-                const salvo = localStorage.getItem('rel_v_final_suave');
+                const salvo = localStorage.getItem('rel_v_xml_totais');
                 if (salvo) relatorio.value = JSON.parse(salvo);
             });
 
             const formatar = (v) => v.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+            // NOVA FUNÇÃO: Calcula os totais da tabela dinamicamente
+            const totaisRelatorio = computed(() => {
+                let totalNF = 0;
+                let totalBase = 0;
+                let totalDIFAL = 0;
+
+                // Transforma "1.234,57" de volta em 1234.57 para poder somar
+                const parseNumber = (str) => {
+                    if (!str) return 0;
+                    return Number(String(str).replace(/\./g, '').replace(',', '.'));
+                };
+
+                relatorio.value.forEach(item => {
+                    totalNF += parseNumber(item.valorBruto);
+                    totalBase += parseNumber(item.base);
+                    totalDIFAL += parseNumber(item.valor);
+                });
+
+                return {
+                    valorBruto: formatar(totalNF),
+                    base: formatar(totalBase),
+                    valor: formatar(totalDIFAL)
+                };
+            });
 
             const filteredResults = computed(() => {
                 const q = searchQuery.value.toLowerCase().trim();
@@ -15248,35 +15312,27 @@
 
             const alqEfetivaDF = computed(() => ncmEncontrado.value ? ncmEncontrado.value.ALQ : 20);
 
-            // FUNÇÃO PARA MUDAR DE ABA COM ROLAGEM
-            const mudarAba = (novaAba) => {
-                tab.value = novaAba;
-            };
+            const mudarAba = (novaAba) => { tab.value = novaAba; };
 
-            // FUNÇÃO: Seleciona o NCM e pula para a aba do DF com rolagem
             const selecionarNcmParaDF = (ncmCode) => {
                 form.value.difal.ncm = String(ncmCode);
                 tab.value = 'difal';
-                searchQuery.value = ''; // Limpa a pesquisa
-                window.scrollTo({ top: 0, behavior: 'smooth' }); // Sobe a tela com elegância
+                searchQuery.value = ''; 
+                window.scrollTo({ top: 0, behavior: 'smooth' }); 
             };
 
             const calcAtivo = computed(() => {
                 const f = form.value[tab.value];
                 const baseBruta = (Number(f.valor) + Number(f.frete) + Number(f.outras)) - Number(f.desconto);
-                let baseFinal = 0;
-                let imposto = 0;
-                let alqDest = 0;
+                let baseFinal = 0; let imposto = 0; let alqDest = 0;
 
                 if (tab.value === 'difal') {
-                    // REGRA DF
                     const rbc = ncmEncontrado.value ? Number(ncmEncontrado.value.RBC) : 1;
                     baseFinal = baseBruta * rbc; 
                     alqDest = alqEfetivaDF.value;
                     imposto = baseFinal * ((alqDest / 100) - (f.origem / 100));
-                } else {
-                    // REGRA GO
-                    alqDest = f.interna;
+                } else if (tab.value === 'goias') {
+                    alqDest = ALIQUOTA_INTERNA_GO;
                     baseFinal = baseBruta > 0 ? (baseBruta / (1 - (alqDest / 100))) : 0;
                     imposto = baseFinal * ((alqDest / 100) - (f.origem / 100));
                 }
@@ -15290,25 +15346,150 @@
                 relatorio.value.unshift({
                     empresa: f.empresa || '---',
                     nf: f.nf || '---',
+                    ncm: f.ncm || '---',
+                    valorBruto: formatar(res.baseBruta),
                     base: formatar(res.baseFinal),
                     valor: formatar(res.imposto),
+                    ufOrigem: '---',
+                    ufDestino: tab.value === 'difal' ? 'DF' : 'GO',
                     origem: f.origem,
                     destino: res.alqDestino
                 });
-                localStorage.setItem('rel_v_final_suave', JSON.stringify(relatorio.value));
+                localStorage.setItem('rel_v_xml_totais', JSON.stringify(relatorio.value));
+            };
+
+            const processarXMLs = async (event) => {
+                const files = event.target.files;
+                if (!files || files.length === 0) return;
+
+                let novosRegistros = [];
+                let qtdImpostoZerado = 0;
+                let qtdOperacaoInterna = 0; 
+
+                for (let file of files) {
+                    const text = await file.text();
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(text, "text/xml");
+
+                    const nNFNode = xmlDoc.getElementsByTagName("nNF")[0];
+                    const nNF = nNFNode ? nNFNode.textContent : "S/N";
+
+                    const xNomeNode = xmlDoc.querySelector("emit > xNome");
+                    const empresa = xNomeNode ? xNomeNode.textContent : "Desconhecida";
+
+                    const emitNode = xmlDoc.querySelector("emit > enderEmit > UF");
+                    const ufEmitente = emitNode ? emitNode.textContent.toUpperCase() : "";
+
+                    const destNode = xmlDoc.querySelector("dest > enderDest > UF");
+                    const ufDestinatario = destNode ? destNode.textContent.toUpperCase() : "";
+
+                    if (ufEmitente === ufDestinatario) {
+                        const detsCount = xmlDoc.getElementsByTagName("det").length;
+                        qtdOperacaoInterna += detsCount;
+                        continue; 
+                    }
+
+                    let regraCalculo = 'difal'; 
+                    if (ufDestinatario === 'DF') regraCalculo = 'difal';
+                    else if (ufDestinatario === 'GO') regraCalculo = 'goias';
+
+                    const dets = xmlDoc.getElementsByTagName("det");
+                    for (let i = 0; i < dets.length; i++) {
+                        const det = dets[i];
+                        
+                        const ncmNode = det.getElementsByTagName("NCM")[0];
+                        const ncm = ncmNode ? ncmNode.textContent : "";
+
+                        const getVal = (tag) => {
+                            const node = det.getElementsByTagName(tag)[0];
+                            return node ? parseFloat(node.textContent) : 0;
+                        };
+
+                        const vProd = getVal("vProd");
+                        const vFrete = getVal("vFrete");
+                        const vOutro = getVal("vOutro");
+                        const vDesc = getVal("vDesc");
+                        const baseBruta = (vProd + vFrete + vOutro) - vDesc;
+                        if (baseBruta <= 0) continue; 
+
+                        let aliquotaOrigem = 12; 
+                        
+                        const origNode = det.querySelector("orig");
+                        const origVal = origNode ? parseInt(origNode.textContent) : 0;
+
+                        if ([1, 2, 3, 8].includes(origVal)) {
+                            aliquotaOrigem = 4;
+                        } else {
+                            const pICMSNode = det.querySelector("pICMS");
+                            if (pICMSNode && parseFloat(pICMSNode.textContent) > 0) {
+                                aliquotaOrigem = parseFloat(pICMSNode.textContent);
+                            } else {
+                                const estados7 = ['PR', 'RS', 'SC', 'MG', 'RJ', 'SP'];
+                                if (estados7.includes(ufEmitente)) {
+                                    aliquotaOrigem = 7;
+                                } else {
+                                    aliquotaOrigem = 12;
+                                }
+                            }
+                        }
+
+                        let baseFinal = 0;
+                        let imposto = 0;
+                        let alqDestino = 0;
+
+                        if (regraCalculo === 'difal') {
+                            const ncmData = DADOS_EXCEL.find(item => String(item.NCM).padStart(8, '0') === ncm.padStart(8, '0'));
+                            const rbc = ncmData ? Number(ncmData.RBC) : 1; 
+                            alqDestino = ncmData ? Number(ncmData.ALQ) : 20; 
+
+                            baseFinal = baseBruta * rbc;
+                            imposto = baseFinal * ((alqDestino / 100) - (aliquotaOrigem / 100));
+                        } else if (regraCalculo === 'goias') {
+                            alqDestino = ALIQUOTA_INTERNA_GO;
+                            baseFinal = baseBruta / (1 - (alqDestino / 100));
+                            imposto = baseFinal * ((alqDestino / 100) - (aliquotaOrigem / 100));
+                        }
+
+                        if (imposto > 0) {
+                            novosRegistros.push({
+                                empresa: empresa,
+                                nf: nNF,
+                                ncm: ncm,
+                                valorBruto: formatar(baseBruta), 
+                                base: formatar(baseFinal),
+                                valor: formatar(imposto),
+                                ufOrigem: ufEmitente, 
+                                ufDestino: ufDestinatario,
+                                origem: aliquotaOrigem,
+                                destino: alqDestino
+                            });
+                        } else {
+                            qtdImpostoZerado++;
+                        }
+                    }
+                }
+
+                relatorio.value = [...novosRegistros, ...relatorio.value];
+                localStorage.setItem('rel_v_xml_totais', JSON.stringify(relatorio.value));
+                event.target.value = '';
+
+                alert(`Lote Processado com Sucesso!\n\n✔ ${novosRegistros.length} itens calculados.\n\nIgnorados:\n❌ ${qtdOperacaoInterna} itens de mesma UF.\n❌ ${qtdImpostoZerado} itens sem DIFAL a recolher.`);
             };
 
             const copiarExcel = () => {
-                let csv = "Empresa;NF;Base;ValorDIFAL;Origem;Destino\n";
-                relatorio.value.forEach(c => csv += `${c.empresa};${c.nf};${c.base};${c.valor};${c.origem};${c.destino}\n`);
+                let csv = "Empresa;NF;NCM;ValorNF;BaseCalculo;ValorDIFAL;UF_Origem;UF_Destino;Aliq_Origem;Aliq_Destino\n";
+                relatorio.value.forEach(c => csv += `${c.empresa};${c.nf};${c.ncm};${c.valorBruto};${c.base};${c.valor};${c.ufOrigem};${c.ufDestino};${c.origem};${c.destino}\n`);
+                // Adiciona os TOTAIS na última linha do Excel também
+                csv += `TOTAIS GERAIS;;;${totaisRelatorio.value.valorBruto};${totaisRelatorio.value.base};${totaisRelatorio.value.valor};;;;\n`;
+                
                 navigator.clipboard.writeText(csv);
-                alert("Copiado com sucesso!");
+                alert("Tabela e Totais copiados para o Excel com sucesso!");
             };
 
-            const limparRelatorio = () => { if(confirm("Apagar tudo?")) { relatorio.value = []; localStorage.removeItem('rel_v_final_suave'); } };
+            const limparRelatorio = () => { if(confirm("Apagar todo o relatório?")) { relatorio.value = []; localStorage.removeItem('rel_v_xml_totais'); } };
             const imprimir = () => window.print();
 
-            return { tab, searchQuery, filteredResults, form, ncmEncontrado, alqEfetivaDF, calcAtivo, mudarAba, selecionarNcmParaDF, adicionarAoRelatorio, formatar, relatorio, copiarExcel, limparRelatorio, imprimir };
+            return { tab, ALIQUOTA_INTERNA_GO, searchQuery, filteredResults, form, ncmEncontrado, alqEfetivaDF, calcAtivo, totaisRelatorio, mudarAba, selecionarNcmParaDF, adicionarAoRelatorio, processarXMLs, formatar, relatorio, copiarExcel, limparRelatorio, imprimir };
         }
     }).mount('#app');
 </script>
