@@ -38,8 +38,8 @@
 
     <nav class="flex bg-white shadow-sm rounded-2xl mb-8 overflow-hidden border border-gray-200 no-print flex-wrap">
         <button @click="mudarAba('consulta')" :class="['tab-btn', tab === 'consulta' ? 'active' : '']">🔍 Consulta NCM</button>
-        <button @click="mudarAba('difal')" :class="['tab-btn', tab === 'difal' ? 'active' : '']">📊 DIFAL DF</button>
-        <button @click="mudarAba('goias')" :class="['tab-btn', tab === 'goias' ? 'active' : '']">🏛️ DIFAL GO</button>
+        <button @click="mudarAba('difal')" :class="['tab-btn', tab === 'difal' ? 'active' : '']">📊 Difal DF</button>
+        <button @click="mudarAba('goias')" :class="['tab-btn', tab === 'goias' ? 'active' : '']">🏛️ Difal GO</button>
         <button @click="mudarAba('xml')" :class="['tab-btn', tab === 'xml' ? 'active text-green-700 !border-green-600' : 'bg-green-50 text-green-700']">📂 Importar XML</button>
     </nav>
 
@@ -50,8 +50,8 @@
                 <div class="flex items-center gap-3 mb-8">
                     <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-black bg-green-600">XML</div>
                     <div>
-                        <h2 class="text-xl font-black text-blue-900 uppercase">cálculo em lote</h2>
-                        <p class="text-xs text-gray-400 font-bold mt-1">Identifica regras, NCM e faz o cálculo do difal a recolher em lote.</p>
+                        <h2 class="text-xl font-black text-blue-900 uppercase">Importar XML</h2>
+                        <p class="text-xs text-gray-400 font-bold mt-1">Calcular Difal em lote a partir do XML das notas fiscais.</p>
                     </div>
                 </div>
 
@@ -67,7 +67,7 @@
                 <div class="lg:col-span-7 bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 no-print">
                     <div class="flex items-center gap-3 mb-8">
                         <div :class="['w-10 h-10 rounded-xl flex items-center justify-center text-white font-black', tab === 'difal' ? 'bg-blue-900' : 'bg-red-600']">{{ tab === 'difal' ? 'DF' : 'GO' }}</div>
-                        <h2 class="text-xl font-black text-blue-900 uppercase">Dados da Nota Fiscal</h2>
+                        <h2 class="text-xl font-black text-blue-900 uppercase">dados da nota fiscal</h2>
                     </div>
 
                     <div class="space-y-4">
@@ -84,12 +84,13 @@
 
                         <div class="grid grid-cols-2 gap-4">
                             <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Valor Mercadoria</label><input type="number" v-model="form[tab].valor" class="input-field font-mono-robust"></div>
-                            <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Frete</label><input type="number" v-model="form[tab].frete" class="input-field font-mono-robust"></div>
+                            <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Frete (+)</label><input type="number" v-model="form[tab].frete" class="input-field font-mono-robust"></div>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-4">
-                            <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Outras Desp.</label><input type="number" v-model="form[tab].outras" class="input-field font-mono-robust"></div>
-                            <div><label class="block text-[10px] font-black text-red-500 uppercase mb-1">Desconto (-)</label><input type="number" v-model="form[tab].desconto" class="input-field font-mono-robust text-red-600"></div>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Outras (+)</label><input type="number" v-model="form[tab].outras" class="input-field font-mono-robust"></div>
+                            <div><label class="block text-[10px] font-black text-purple-600 uppercase mb-1">IPI (+)</label><input type="number" v-model="form[tab].ipi" class="input-field font-mono-robust border-purple-300 bg-purple-50 text-purple-800"></div>
+                            <div><label class="block text-[10px] font-black text-red-500 uppercase mb-1">Desc. (-)</label><input type="number" v-model="form[tab].desconto" class="input-field font-mono-robust text-red-600 border-red-200"></div>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
@@ -99,7 +100,8 @@
                                 </select>
                             </div>
                             <div><label class="block text-[10px] font-black text-blue-600 uppercase mb-1">Interna Destino %</label>
-                                <input type="text" readonly :value="tab === 'goias' ? ALIQUOTA_INTERNA_GO + '%' : alqEfetivaDF + '%'" class="input-field bg-gray-50 text-gray-400">
+                                <input type="number" v-model="form.goias.interna" v-if="tab === 'goias'" class="input-field border-blue-600 bg-blue-50">
+                                <input type="text" readonly :value="alqEfetivaDF + '%'" v-else class="input-field bg-gray-50 text-gray-400">
                             </div>
                         </div>
 
@@ -111,16 +113,16 @@
                     <div :class="['result-panel p-10 h-full flex flex-col justify-center text-center relative overflow-hidden', tab === 'goias' ? '!bg-slate-800' : '']">
                         <p class="text-blue-300 font-bold text-xs uppercase tracking-[0.3em] mb-8">Resumo do Cálculo</p>
                         <div class="space-y-4 mb-10 text-left font-mono-robust bg-black/20 p-6 rounded-2xl border border-white/5 text-sm">
-                            <div class="flex justify-between border-b border-white/5 pb-2 text-xs opacity-70"><span>Valor da mercadoria:</span> <span>R$ {{ formatar(calcAtivo.baseBruta) }}</span></div>
+                            <div class="flex justify-between border-b border-white/5 pb-2 text-xs opacity-70"><span>Valor Mercadoria:</span> <span>R$ {{ formatar(calcAtivo.baseBruta) }}</span></div>
                             
                             <div class="flex justify-between text-yellow-400 font-black">
                                 <span>{{ tab === 'difal' ? 'Base de Cálculo:' : 'Base de Cálculo:' }}</span> 
                                 <span>R$ {{ formatar(calcAtivo.baseFinal) }}</span>
                             </div>
                         </div>
-                        <p class="text-[10px] font-black uppercase tracking-widest mb-2 text-red-500">Difal a Recolher</p>
+                        <p class="text-[10px] font-black uppercase tracking-widest mb-2 text-red-400">Difal a Recolher</p>
                         <div class="flex items-center justify-center gap-2">
-                            <span class="text-2xl font-black text-red-500">R$</span>
+                            <span class="text-2xl font-bold text-red-500">R$</span>
                             <span class="text-6xl font-black tracking-tighter">{{ formatar(calcAtivo.imposto) }}</span>
                         </div>
                     </div>
@@ -180,7 +182,7 @@
                                 <td class="p-3 font-mono text-xs text-gray-500">{{ c.ncm }}</td>
                                 <td class="p-3">R$ {{ c.valorBruto }}</td>
                                 <td class="p-3">R$ {{ c.base }}</td>
-                                <td class="p-3 font-bold text-red-600">R$ {{ c.valor }}</td>
+                                <td class="p-3 font-black text-red-600">R$ {{ c.valor }}</td>
                                 <td class="p-3 font-bold text-blue-900 bg-blue-50/50 rounded-lg text-center">{{ c.ufOrigem }} ➔ {{ c.ufDestino }}</td>
                                 <td class="p-3 font-mono text-xs">{{ c.origem }}%</td>
                                 <td class="p-3 font-mono text-xs">{{ c.destino }}%</td>
@@ -191,7 +193,7 @@
                                 <td colspan="3" class="p-4 text-right font-black uppercase tracking-widest text-blue-900 text-xs">Total Geral:</td>
                                 <td class="p-4 font-black text-blue-900">R$ {{ totaisRelatorio.valorBruto }}</td>
                                 <td class="p-4 font-black text-blue-900">R$ {{ totaisRelatorio.base }}</td>
-                                <td class="p-4 font-black text-red-600">R$ {{ totaisRelatorio.valor }}</td>
+                                <td class="p-4 font-black text-red-600 text-lg">R$ {{ totaisRelatorio.valor }}</td>
                                 <td colspan="3" class="p-4"></td>
                             </tr>
                         </tfoot>
@@ -203,7 +205,7 @@
 </div>
 
 <script>
-    const DADOS_EXCEL = [ {"NCM":"01010000","DESC":"Cavalos, asininos e muares, vivos","ALQ":20,"RBC":1.0},
+const DADOS_EXCEL = [ {"NCM":"01010000","DESC":"Cavalos, asininos e muares, vivos","ALQ":20,"RBC":1.0},
 			{"NCM":"01012000","DESC":"- Cavalos:","ALQ":20,"RBC":1.0},
 			{"NCM":"01012100","DESC":"-- Reprodutores de raça pura","ALQ":20,"RBC":1.0},
 			{"NCM":"01012900","DESC":"-- Outros","ALQ":20,"RBC":1.0},
@@ -15251,8 +15253,7 @@
 			{"NCM":"99980202","DESC":"CONSUMO DE BORDO - QQOUTRA MERCADORIA P/AERONAVES","ALQ":20,"RBC":1.0},
 			{"NCM":"99997103","DESC":"JOALHERIA DE OURO DO CAPITULO 71 DA NCM","ALQ":20,"RBC":1.0},
 			{"NCM":"99997104","DESC":"OUTROS ARTIGOS DO CAPITULO 71 DA NCM","ALQ":20,"RBC":1.0},
-			{"NCM":"99999900","DESC":"QQOUTRA MERCADORIA SEM COBERTURA CAMBIAL","ALQ":20,"RBC":1.0}];     
-    // ALÍQUOTA FIXA DE GOIÁS
+			{"NCM":"99999900","DESC":"QQOUTRA MERCADORIA SEM COBERTURA CAMBIAL","ALQ":20,"RBC":1.0}];        
     const ALIQUOTA_INTERNA_GO = 19;
 
     const { createApp, ref, computed, onMounted } = Vue;
@@ -15262,36 +15263,30 @@
             const relatorio = ref([]);
             const searchQuery = ref('');
             
+            // ADICIONADO: O campo IPI iniciando com 0
             const form = ref({
-                difal: { empresa: '', nf: '', ncm: '', valor: 0, frete: 0, outras: 0, desconto: 0, origem: 12 },
-                goias: { empresa: '', nf: '', interna: ALIQUOTA_INTERNA_GO, valor: 0, frete: 0, outras: 0, desconto: 0, origem: 12 }
+                difal: { empresa: '', nf: '', ncm: '', valor: 0, frete: 0, outras: 0, ipi: 0, desconto: 0, origem: 12 },
+                goias: { empresa: '', nf: '', interna: ALIQUOTA_INTERNA_GO, valor: 0, frete: 0, outras: 0, ipi: 0, desconto: 0, origem: 12 }
             });
 
             onMounted(() => {
-                const salvo = localStorage.getItem('rel_v_xml_totais');
+                const salvo = localStorage.getItem('rel_v_xml_ipi');
                 if (salvo) relatorio.value = JSON.parse(salvo);
             });
 
             const formatar = (v) => v.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
-            // NOVA FUNÇÃO: Calcula os totais da tabela dinamicamente
             const totaisRelatorio = computed(() => {
-                let totalNF = 0;
-                let totalBase = 0;
-                let totalDIFAL = 0;
-
-                // Transforma "1.234,57" de volta em 1234.57 para poder somar
+                let totalNF = 0; let totalBase = 0; let totalDIFAL = 0;
                 const parseNumber = (str) => {
                     if (!str) return 0;
                     return Number(String(str).replace(/\./g, '').replace(',', '.'));
                 };
-
                 relatorio.value.forEach(item => {
                     totalNF += parseNumber(item.valorBruto);
                     totalBase += parseNumber(item.base);
                     totalDIFAL += parseNumber(item.valor);
                 });
-
                 return {
                     valorBruto: formatar(totalNF),
                     base: formatar(totalBase),
@@ -15323,7 +15318,8 @@
 
             const calcAtivo = computed(() => {
                 const f = form.value[tab.value];
-                const baseBruta = (Number(f.valor) + Number(f.frete) + Number(f.outras)) - Number(f.desconto);
+                // ADICIONADO: Soma do IPI na Base Bruta
+                const baseBruta = (Number(f.valor) + Number(f.frete) + Number(f.outras) + Number(f.ipi)) - Number(f.desconto);
                 let baseFinal = 0; let imposto = 0; let alqDest = 0;
 
                 if (tab.value === 'difal') {
@@ -15332,7 +15328,7 @@
                     alqDest = alqEfetivaDF.value;
                     imposto = baseFinal * ((alqDest / 100) - (f.origem / 100));
                 } else if (tab.value === 'goias') {
-                    alqDest = ALIQUOTA_INTERNA_GO;
+                    alqDest = f.interna;
                     baseFinal = baseBruta > 0 ? (baseBruta / (1 - (alqDest / 100))) : 0;
                     imposto = baseFinal * ((alqDest / 100) - (f.origem / 100));
                 }
@@ -15355,7 +15351,7 @@
                     origem: f.origem,
                     destino: res.alqDestino
                 });
-                localStorage.setItem('rel_v_xml_totais', JSON.stringify(relatorio.value));
+                localStorage.setItem('rel_v_xml_ipi', JSON.stringify(relatorio.value));
             };
 
             const processarXMLs = async (event) => {
@@ -15409,7 +15405,10 @@
                         const vFrete = getVal("vFrete");
                         const vOutro = getVal("vOutro");
                         const vDesc = getVal("vDesc");
-                        const baseBruta = (vProd + vFrete + vOutro) - vDesc;
+                        const vIPI = getVal("vIPI"); // ADICIONADO: Extrai o IPI se existir na tag
+
+                        // ADICIONADO: Soma do IPI na base lida do XML
+                        const baseBruta = (vProd + vFrete + vOutro + vIPI) - vDesc;
                         if (baseBruta <= 0) continue; 
 
                         let aliquotaOrigem = 12; 
@@ -15470,7 +15469,7 @@
                 }
 
                 relatorio.value = [...novosRegistros, ...relatorio.value];
-                localStorage.setItem('rel_v_xml_totais', JSON.stringify(relatorio.value));
+                localStorage.setItem('rel_v_xml_ipi', JSON.stringify(relatorio.value));
                 event.target.value = '';
 
                 alert(`Lote Processado com Sucesso!\n\n✔ ${novosRegistros.length} itens calculados.\n\nIgnorados:\n❌ ${qtdOperacaoInterna} itens de mesma UF.\n❌ ${qtdImpostoZerado} itens sem DIFAL a recolher.`);
@@ -15479,17 +15478,16 @@
             const copiarExcel = () => {
                 let csv = "Empresa;NF;NCM;ValorNF;BaseCalculo;ValorDIFAL;UF_Origem;UF_Destino;Aliq_Origem;Aliq_Destino\n";
                 relatorio.value.forEach(c => csv += `${c.empresa};${c.nf};${c.ncm};${c.valorBruto};${c.base};${c.valor};${c.ufOrigem};${c.ufDestino};${c.origem};${c.destino}\n`);
-                // Adiciona os TOTAIS na última linha do Excel também
                 csv += `TOTAIS GERAIS;;;${totaisRelatorio.value.valorBruto};${totaisRelatorio.value.base};${totaisRelatorio.value.valor};;;;\n`;
                 
                 navigator.clipboard.writeText(csv);
                 alert("Tabela e Totais copiados para o Excel com sucesso!");
             };
 
-            const limparRelatorio = () => { if(confirm("Apagar todo o relatório?")) { relatorio.value = []; localStorage.removeItem('rel_v_xml_totais'); } };
+            const limparRelatorio = () => { if(confirm("Apagar todo o relatório?")) { relatorio.value = []; localStorage.removeItem('rel_v_xml_ipi'); } };
             const imprimir = () => window.print();
 
-            return { tab, ALIQUOTA_INTERNA_GO, searchQuery, filteredResults, form, ncmEncontrado, alqEfetivaDF, calcAtivo, totaisRelatorio, mudarAba, selecionarNcmParaDF, adicionarAoRelatorio, processarXMLs, formatar, relatorio, copiarExcel, limparRelatorio, imprimir };
+            return { tab, searchQuery, filteredResults, form, ncmEncontrado, alqEfetivaDF, calcAtivo, totaisRelatorio, mudarAba, selecionarNcmParaDF, adicionarAoRelatorio, processarXMLs, formatar, relatorio, copiarExcel, limparRelatorio, imprimir };
         }
     }).mount('#app');
 </script>
